@@ -1,7 +1,7 @@
 -- SQLite code to create .code.pit tables
 
 create table blobs (
-    hash integer primary key not null,
+    hash blob primary key not null,
     type text,
     author text,
     timestamp integer,
@@ -10,7 +10,7 @@ create table blobs (
 ) strict;
 
 create table heads (
-    ref_hash integer not null,
+    ref_hash blob not null,
     name text unique not null,
     foreign key (ref_hash) references blobs(hash)
 ) strict;
@@ -18,16 +18,16 @@ create table heads (
 create unique index head_name on heads(name);
 
 create table tags (
-    ref_hash integer not null,
+    ref_hash blob not null,
     name text unique not null,
     foreign key (ref_hash) references blobs(hash)
 ) strict;
 create unique index tag_names on tags(name);
 
 create table commits (
-    comment_hash integer not null,
-    tree_hash integer,
-    parent_hash integer,
+    comment_hash blob not null,
+    tree_hash blob,
+    parent_hash blob,
     foreign key (comment_hash) references blobs(hash),
     foreign key (tree_hash) references blobs(hash),
     foreign key (parent_hash) references blobs(hash)
@@ -35,9 +35,9 @@ create table commits (
 create unique index commit_hashes on commits(comment_hash);
 
 create table annotation (
-    comment_hash integer unique not null,
-    parent_hash integer,
-    ref_hash integer not null,
+    comment_hash blob unique not null,
+    parent_hash blob,
+    ref_hash blob not null,
     foreign key (comment_hash) references blobs(hash),
     foreign key (ref_hash) references blobs(hash)
 ) strict;
