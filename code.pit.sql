@@ -33,3 +33,13 @@ create table commits (
     foreign key (parent_hash) references blobs(hash)
 ) strict;
 create unique index commit_hashes on commits(comment_hash);
+
+create table annotation (
+    comment_hash integer unique not null,
+    parent_hash integer,
+    ref_hash integer not null,
+    foreign key (comment_hash) references blobs(hash),
+    foreign key (ref_hash) references blobs(hash)
+) strict;
+create unique index annotation_hashes on annotation(comment_hash);
+create unique index annotation_parents on annotation(parent_hash);
