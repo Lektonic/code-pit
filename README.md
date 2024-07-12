@@ -1,8 +1,6 @@
-# Pit
+# Code Pit
 
-## The Code Pit
-
-A simple code versioning tool based off of Git plumbing.
+A simple code versioning tool based off of Git plumbing mixed with a SQLite backend.
 
 ## How it works
 
