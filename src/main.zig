@@ -4,14 +4,37 @@ const c = @cImport({
 });
 const hash_digest = std.crypto.hash.sha2.Sha256;
 
-pub fn open_code_db(path_to_db: [*c]const u8) ?*c.sqlite3 {
-    var c_db: ?*c.sqlite3 = undefined;
-    if (c.SQLITE_OK != c.sqlite3_open(path_to_db, &c_db)) {
-        std.debug.print("Unable to open database: {s}\n", .{c.sqlite3_errmsg(c_db)});
-        return c_db;
+/// Basic sqlite3 wrapper
+const DB = struct {
+    db: *c.sqlite3,
+
+    fn init(db: *c.sqlite3) DB {
+        return .{ .db = db };
     }
-    return c_db;
-}
+
+    fn open(path_to_db: [:0]const u8) !DB {
+        var c_db: ?*c.sqlite3 = undefined;
+        if (c.SQLITE_OK != c.sqlite3_open(path_to_db, &c_db)) {
+            std.debug.print("Unable to open database: {s}\n", .{c.sqlite3_errmsg(c_db)});
+            return error.execError;
+        }
+        return .{ .db = c_db.? };
+    }
+
+    fn close(self: DB) void {
+        _ = c.sqlite3_close(self.db);
+    }
+
+    fn execute(self: DB, query: [:0]const u8) !void {
+        var errmsg: [*c]u8 = undefined;
+        if (c.SQLITE_OK != c.sqlite3_exec(self.db, query, null, null, &errmsg)) {
+            defer c.sqlite3_free(errmsg);
+            std.debug.print("Exec query failed: {s}\n", .{errmsg});
+            return error.execError;
+        }
+        return;
+    }
+};
 
 const code_pit_init_scrpt = @embedFile("code-pit.init.sql");
 
