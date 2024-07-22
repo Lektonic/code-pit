@@ -39,21 +39,41 @@ const DB = struct {
 const code_pit_init_scrpt = @embedFile("code-pit.init.sql");
 
 pub fn main() !void {
-    const version = c.sqlite3_libversion();
-    std.debug.print("libsqlite3 version is {s}\n", .{version});
-    std.debug.print(code_pit_init_scrpt, .{});
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer _ = gpa.deinit();
+
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    if (std.mem.eql(u8, args[1], "write-object")) {
+        var hash: [hash_digest.digest_length]u8 = undefined;
+        if (std.mem.eql(u8, args[2], "--stdin")) {
+            const in = std.io.getStdIn();
+            hash = try hash_reader(in.reader().any());
+        } else {
+            hash = try hash_file(args[2]);
+        }
+
+        std.debug.print("{x}\n", .{hash});
+    } else if (std.mem.eql(u8, args[1], "lib-version")) {
+        const version = c.sqlite3_libversion();
+        std.debug.print("libsqlite3 version is {s}\n", .{version});
+    } else {
+        std.debug.print("TODO: Help dialog", .{});
+    }
 }
 
 pub fn hash_file(name: []u8) ![hash_digest.digest_length]u8 {
     const hf = try std.fs.cwd().openFile(name, .{});
     defer hf.close();
 
-    const hfr = hf.reader();
+    const hfr = hf.reader().any();
 
     return hash_reader(hfr);
 }
 
-pub fn hash_reader(reader: std.Reader) ![hash_digest.digest_length]u8 {
+pub fn hash_reader(reader: std.io.AnyReader) ![hash_digest.digest_length]u8 {
     var hash = hash_digest.init(.{});
     var buf: [4096]u8 = undefined;
     var n = try reader.read(&buf);
@@ -62,5 +82,5 @@ pub fn hash_reader(reader: std.Reader) ![hash_digest.digest_length]u8 {
         n = try reader.read(&buf);
     }
 
-    return hash_digest.finalResult();
+    return hash.finalResult();
 }
